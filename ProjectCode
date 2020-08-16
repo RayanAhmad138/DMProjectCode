@@ -1,0 +1,120 @@
+First of all, importing the required libraries:
+import sys
+import numpy
+import pandas
+import seaborn
+import scipy
+print('Python: {}'.format(sys.version))
+print('Numpy: {}'.format(numpy.__version__))
+print('Pandas: {}'.format(pandas.__version__))
+print('Matplotlib: {}'.format(matplotlib.__version__))
+print('Seaborn: {}'.format(seaborn.__version__))
+print('Scipy: {}'.format(scipy.__version__))
+
+Now we will have to import the necessary packages:
+#importing packages
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+Importing the dataset:
+In the cells below, we must import our dataset as a Pandas DataFrame from a.csv format. We will also begin exploring the data set to gain an understanding of the data type, quantity, and distribution in our dataset. To this end, we will use the built-in definition function of Pandas, as well as histogram parameters and a matrix of correlations.
+# By using pandas import the dataset 
+DataSet = pd.read_csv('CreditCardSystem.csv')
+
+# Explore the Data set
+print(DataSet.columns)
+
+# Now print data shape
+DataSet = DataSet.sample(frac=0.1, random_state = 1)
+print(DataSet.shape)
+print(DataSet.describe())
+# V1 - V28 are the results of a PCA Dimensionality reduction 
+
+
+# Now plot histogram by parameters 
+DataSet.hist(figsize = (20, 20))
+plt.show()
+
+# Calculate number of frauds in dataset
+FraudCase = DataSet[DataSet['Class'] == 1]
+Valid = DataSet[DataSet['Class'] == 0]
+
+Outlier_Fraction = len(FraudCase)/float(len(Valid))
+print(Outlier_Fraction)
+
+print('Fraud Cases: {}'.format(len(DataSet[DataSet['Class'] == 1])))
+print('Valid Transactions: {}'.format(len(DataSet[DataSet['Class'] == 0])))
+
+
+# Developing the Correlation matrix
+Corrmatrix = DataSet.corr()
+fig = plt.figure(figsize = (12, 9))
+
+sns.heatmap(corrMatrix, vmax = .8, square = True)
+plt.show()
+
+columns = DataSet.columns.tolist()
+
+# To remove unnecessary data you should filter columns
+
+columns = [c for c in columns if c not in ["Class"]]
+# Store the variable for prediction
+Target = "Class"
+X_side = DataSet[columns]
+Y_side = DataSet[Target]
+
+# Now Print the shapes
+print(X_side.shape)
+print(Y_side.shape)
+
+Applying machine learning algorithms:
+Now we have imported our dataset and processed it. We can now implement the machine learning algorithms.
+We will implement LOF and IFS algorithms.
+
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+
+# Now define the random states
+ST = 1
+
+# define the outlier detection tools 
+
+classifiers = {
+    "Isolation Forest": IsolationForest(max_samples=len(X),
+                                        contamination=outlier_fraction,
+                                        random_state=ST),
+    "Local Outlier Factor": LocalOutlierFactor(
+        n_neighbors=20,
+        contamination=outlier_fraction)}
+
+
+# Fit the model in your dataset
+plt.figure(figsize=(9, 7))
+n_outliers = len(FraudCase)
+
+for i, (clf_name, clf) in enumerate(classifiers.items()):
+    
+    # Now proceed to fit the data and tag outliers
+
+    if clf_name == "Local Outlier Factor":
+        y_predict = clf.fit_predict(X_side)
+        scores_predict = clf.negative_outlier_factor_
+    else:
+        clf.fit(X_side)
+        scores_predict = clf.decision_function(X_side)
+        y_predict = clf.predict(X_side)
+    
+    # Now Redesign the prediction values to 0 for valid, 1 for fraudulent transaction. 
+    y_predict[y_predict == 1] = 0
+    y_predict[y_predict == -1] = 1
+    
+    n_errors = (y_predict != Y).sum()
+    
+    # Finally Run the classification metrics
+    print('{}: {}'.format(clf_name, n_errors))
+    print(accuracy_score(Y, y_predict))
+    print(classification_report(Y, y_predict))
+
+
